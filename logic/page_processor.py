@@ -2,10 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 import re
 from utils import strip_tags
-from search import QueryResult
-from datetime import date
-from random import randint
-
+import utils
+from extract_date import extract_dates
 
 class PageProcessingException(Exception):
 
@@ -34,69 +32,45 @@ class Event(object):
         return "%s (%s)" % (self.title, self.startDate)
 
 
+def process_page(query_result):
+    print "processing page %s " % query_result
+    html_text = utils.download_page(query_result.href)
+    dates = extract_dates(html_text)
+    print len(dates)
+    print dates
+    if dates:
+        return [Event(query_result.title, dates[0].dateRange.start, dates[0].dateRange.end)]
+
+
 def get_events(query_result):
-    y = 2016
-    m = randint(1, 3)
-    d = randint(1, 28)
+    if query_result and query_result.description:
+            dates = extract_dates(query_result.description)
+            if dates:
+                return [Event(query_result.title, dates[0].dateRange.start, dates[0].dateRange.end)]
 
-    return [Event(query_result.title, date(y, m, d))]
-
-
-
-ress = [r"[0-9]{2].[0-9]{2].[0-9]{4]"]
-
-for res in ress:
-    prog = re.compile(res)
-
-headers = {
-    'user-agent': 'Mozilla/5.0 (Windows) Gecko/20100101 Firefox/44.0',
-    'accept': "image/webp,image/*,*/*;q=0.8",
-    'accept-language': 'accept-language:en-US,en;q=0.8,pl;q=0.6,ar;q=0.4'
-}
+    if query_result and query_result.href and query_result.title:
+        return process_page(query_result)
 
 
-def download_page(url):
-    r = requests.get(url, headers=headers)
-    if r.status_code != 200:
-        return ""
-    return r.text
-
-
-def extract_events(html, title):
-    b = BeautifulSoup(html, 'html.parser')
-    body = b.find('body')
-    a = re.compile(title, re.I)
-    text = strip_tags("".join(list(body.strings)))
-    print text
-    ms = re.findall(title, text, re.I)
-    print ms
-    for m in ms:
-        print title
-        print m.group(0)
-
-
-def extract_text(html, title):
-    b = BeautifulSoup(html, 'html.parser')
-    return b.get_text()
 
 
 
 if __name__ == "__main__":
     import sys
-
-    reload(sys)
-    sys.setdefaultencoding('utf-8')
-
-    title = "festiwal gdynia"
-    ress = from_file("results.html")
-    for res in ress:
-
-        if res.title and res.href:
-            try:
-                print "searching " + res.href + " for " + res.title
-                text = download_page(res.href)
-                print extract_text(text, res.title)
-            except IOError as er:
-                print er
-            except Exception as ex:
-                print ex
+    #
+    # reload(sys)
+    # sys.setdefaultencoding('utf-8')
+    #
+    # title = "festiwal gdynia"
+    # ress = from_file("results.html")
+    # for res in ress:
+    #
+    #     if res.title and res.href:
+    #         try:
+    #             print "searching " + res.href + " for " + res.title
+    #             text = download_page(res.href)
+    #             print extract_text(text, res.title)
+    #         except IOError as er:
+    #             print er
+    #         except Exception as ex:
+    #             print ex

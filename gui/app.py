@@ -43,7 +43,7 @@ class SearchEventApp(QtGui.QMainWindow, searchUI.Ui_MainWindow):
 
         t = self.worker.exception
 
-        msg = ""
+        msg = "Cannot perform this task."
         if isinstance(t, IOError):
             msg = "check your connection. Network is unreachable."
         elif isinstance(t, logic.EngineQueryError):
@@ -73,6 +73,11 @@ class SearchEventApp(QtGui.QMainWindow, searchUI.Ui_MainWindow):
             for event in self.events:
                 if event.startDate == pydate:
                     devent.append(event)
+                elif event.endDate:
+                    if event.startDate <= pydate <= event.endDate:
+                        devent.append(event)
+
+
         text = ""
         if len(devent) > 1:
             # TODO: kilka wydarzen
@@ -80,12 +85,18 @@ class SearchEventApp(QtGui.QMainWindow, searchUI.Ui_MainWindow):
         elif len(devent) == 1:
             text = devent[0].title
 
+        color = QtGui.QColor(self.calendarWidget.palette().color(QtGui.QPalette.Highlight))
+
         if devent:
+            painter.fillRect(rect, color)
+            painter.drawText(rect.topLeft() + QtCore.QPoint(20, 20), str(date.day()))
             w = rect.width()
             h = rect.height()
             new_rect = QtCore.QRectF(rect)
             new_rect.setTopLeft(new_rect.topLeft() + QtCore.QPointF(0.1 * w, 0.5 * h))
             painter.drawText(new_rect, text, text_option)
+
+
 
     def search_done(self):
 
@@ -106,7 +117,10 @@ class SearchEventApp(QtGui.QMainWindow, searchUI.Ui_MainWindow):
                 # setup event item look
                 item = QEventItemWidget(self.listView)
                 item.set_text(event.title)
-                item.set_date(event.startDate)
+                if event.endDate:
+                    item.set_date(event.startDate + " - " + event.endDate)
+                else:
+                    item.set_date(event.startDate)
 
                 # some code that is necessary evil
                 event_list_widget_item = QtGui.QListWidgetItem(self.listView)

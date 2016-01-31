@@ -2,8 +2,22 @@ import requests
 from bs4 import BeautifulSoup
 import re
 from utils import strip_tags
-from search import get_n_results
 from search import QueryResult
+from datetime import date
+from random import randint
+
+
+class PageProcessingException(Exception):
+
+    def __init__(self, msg, web_page):
+        self.msg = msg
+        self.web_page = web_page
+
+    def __str__(self):
+        return "Error while processing page %s . %s" % (self.web_page, self.msg)
+
+    def __repr__(self):
+        return "Error while processing page %s . %s" % (self.web_page, self.msg)
 
 
 class Event(object):
@@ -12,6 +26,21 @@ class Event(object):
         self.startDate = startDate
         self.endDate = endDate
         self.desc = desc
+
+    def __str__(self):
+        return "%s (%s)" % (self.title, self.startDate)
+
+    def __repr__(self):
+        return "%s (%s)" % (self.title, self.startDate)
+
+
+def get_events(query_result):
+    y = 2016
+    m = randint(1, 3)
+    d = randint(1, 28)
+
+    return [Event(query_result.title, date(y, m, d))]
+
 
 
 ress = [r"[0-9]{2].[0-9]{2].[0-9]{4]"]
@@ -50,13 +79,6 @@ def extract_text(html, title):
     b = BeautifulSoup(html, 'html.parser')
     return b.get_text()
 
-
-# for testing only
-def from_file(path):
-    lines = ""
-    with open(path) as f:
-        lines = f.readlines()
-    return [QueryResult((line.split(":<>:")[1]).strip(), (line.split(":<>:")[0]).strip(), "") for line in lines]
 
 
 if __name__ == "__main__":

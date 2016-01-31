@@ -1,5 +1,6 @@
 from HTMLParser import HTMLParser
-
+from common.utils import dump, read_file
+import search
 
 class MLStripper(HTMLParser):
     def __init__(self):
@@ -18,14 +19,16 @@ def strip_tags(html):
     s.feed(html)
     return s.get_data()
 
+def dump_query_results(query_results, filepath):
+    res = "\n".join(["%s :<>: %s :<>: %s" % (qr.title, qr.href, qr.description) for qr in query_results])
+    dump(res, filepath)
 
-def dump(text, filename):
-    with open(filename, "w") as f:
-        f.write(text)
+def read_query_results(filepath):
+    cont = read_file(filepath)
+    lines = cont.split("\n")
+    qrs = []
+    for line in lines:
+        ts = [t.strip() if t else "" for t in line.split(":<>:")]
+        qrs.append(search.QueryResult(ts[0], ts[1], ts[2]))
+    return qrs
 
-
-def read_file(filepath):
-    cont = ""
-    with open(filepath) as f:
-        cont = f.read()
-    return cont

@@ -34,13 +34,14 @@ class QEventItemWidget(QtGui.QWidget):
         self.titleLabel.setText(text)
 
     def set_date(self, date):
-        self.dateLabel.setText(date)
+        # TODO: date formatting
+        self.dateLabel.setText(str(date))
 
 
 class Worker(QtCore.QThread):
     def __init__(self, query=None, n=10):
         QtCore.QThread.__init__(self)
-        self.results = None
+        self.events = None
         self.query = query
         self.n = n
         self.exception = None
@@ -53,10 +54,10 @@ class Worker(QtCore.QThread):
         self.wait()
 
     def run(self):
-        self.results = []
+        self.events = []
         if self.query:
             try:
-                self.results = logic.get_n_results(self.query, self.n)
+                self.events = logic.get_n_events(self.query, self.n)
                 self.emit(QtCore.SIGNAL('worker_finished()'))
             except logic.EngineQueryError as er:
                 print er

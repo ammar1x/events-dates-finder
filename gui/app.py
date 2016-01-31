@@ -4,38 +4,37 @@ import sys
 import searchUI
 from helpers import QEventItemWidget, Worker
 import logic
+from common.utils import read_file
 
 
 class SearchEventApp(QtGui.QMainWindow, searchUI.Ui_MainWindow):
+
     def __init__(self, parent=None):
         super(SearchEventApp, self).__init__(parent)
         self.setupUi(self)
+
         self.searchButton.clicked.connect(self.search_events)
+
         self.progressBar.setRange(0, 1)
-        self.progressBar.setStyleSheet('''
-QProgressBar
-{
-    border: 2px solid grey;
-    border-radius: 5px;
-    text-align: center;
-}
-QProgressBar::chunk
-{
-    background-color: #d7801a;
-    width: 2.15px;
-    margin: 0.5px;
-}''')
+        self.progressBar.setStyleSheet(read_file("progres_bar_stylesheet.css"))
 
         self.paint_cell_calendar_old = self.calendarWidget.paintCell
         self.calendarWidget.paintCell = self.paint_calendar_cell
         self.calendarWidget.clicked.connect(self.handle_date_clicked)
 
+
         # QtCore.QObject.connect(self.searchInput, QtCore.SIGNAL('keyPressed()'), self.search_events)
         self.searchInput.returnPressed.connect(self.search_events)
 
         self.worker = Worker()
+
         self.connect(self.worker, QtCore.SIGNAL("worker_finished()"), self.search_done)
+        # change calendar when worker finishes
+        self.calendarWidget.connect(self.worker, QtCore.SIGNAL("worker_finished()"), self.calendarWidget.updateCells)
+
         self.connect(self.worker, QtCore.SIGNAL("worker_error()"), self.search_error)
+
+        self.events = []
 
     def search_error(self):
         self.searchInput.setEnabled(True)
@@ -66,16 +65,22 @@ QProgressBar::chunk
         painter.drawText(rect.topLeft() + QtCore.QPoint(20, 20), str(date.day()))
         text_option = QtGui.QTextOption()
         text_option.setWrapMode(QtGui.QTextOption.WordWrap)
-        tests = ["hello world", "zlot milosnikow zlota", "wino i dziewczyny",
-                 "klaendarz jest taki glupi ze tego sobie nie wyborazasz",
-                 "kiedy w koncu zaczniesz pracowac",
-                 "nie wiem co ja tutaj robie, nie wiem czym sie kierowac w zyciu",
-                 "podstawa wszystkiego jest wiedza nabyta w sposob doswiadczalny, nie oznacza to jednak zawansowany"]
-        if date.day() % 5 == 0:  # example condition based on date
-            text = tests[date.day() % len(tests)]
-            # if len(text) > 20:
-            #     text = text[:17] + "..."
-            #
+
+        pydate = date.toPyDate()
+
+        devent = []
+        if self.events:
+            for event in self.events:
+                if event.startDate == pydate:
+                    devent.append(event)
+        text = ""
+        if len(devent) > 1:
+            # TODO: kilka wydarzen
+            text = "%d wydarzenia" % len(devent)
+        elif len(devent) == 1:
+            text = devent[0].title
+
+        if devent:
             w = rect.width()
             h = rect.height()
             new_rect = QtCore.QRectF(rect)
@@ -91,16 +96,17 @@ QProgressBar::chunk
 
         self.progressBar.setRange(0, 1)
 
-        results = self.worker.results
-        if results:
+        events = self.worker.events
+        self.events = events
+        if events:
             self.listView.clear()
             i = 0
+            for event in events:
 
-            for result in results:
                 # setup event item look
                 item = QEventItemWidget(self.listView)
-                item.set_text(result.title)
-                item.set_date(result.href)
+                item.set_text(event.title)
+                item.set_date(event.startDate)
 
                 # some code that is necessary evil
                 event_list_widget_item = QtGui.QListWidgetItem(self.listView)
@@ -109,7 +115,7 @@ QProgressBar::chunk
                 self.listView.addItem(event_list_widget_item)
                 self.listView.setItemWidget(event_list_widget_item, item)
 
-                i = (i + 1) % 2
+
 
     def search_events(self):
 
@@ -123,6 +129,11 @@ QProgressBar::chunk
 
 
 def main():
+
+    import sys
+    reload(sys)
+    sys.setdefaultencoding('utf-8')
+
     app = QtGui.QApplication(sys.argv)
     form = SearchEventApp()
     form.show()

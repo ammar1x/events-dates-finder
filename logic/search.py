@@ -2,6 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 import time
 from utils import strip_tags
+from common.utils import read_file
+from common.utils import dump
 
 
 class EngineQueryError(Exception):

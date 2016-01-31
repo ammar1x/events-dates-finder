@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 import re
 from datetime import date
+from common.models import DateRange
 import pprint
 
 rxDelimiter = r"[ -/.]"
 rxDay = r"[0-9]{2}"
 rxMonth = r"[0-1][0-9]"
 rxYear = r"[0-9]{4}"
-rxPolishMonth = r"(stycz|lut|mar|kwie|maj|czerw|lip|sierp|wrze|pa|listopad|grud)[^\s]+"
+rxPolishMonth = r"(stycz|lut|mar|kwie|maj|czerw|lip|sierp|wrze|pa|list|grud)[^\s]+"
 
 # dd/mm/yyyy
 european_date_format = "[^-]" + "(" + rxDay + rxDelimiter + rxMonth + rxDelimiter + rxYear + ")"
@@ -33,7 +34,7 @@ formats = [
     polish_date_format_range,
     polish1_date_format]
 
-polish_months_prefix = [u"-", u"stycz", u"lut", u"marz", u"kwiec", u"maj", u"czerw", u"lip", u"sierp", u"wrze", u"pa",
+polish_months_prefix = [u"-", u"stycz", u"lut", u"mar", u"kwie", u"maj", u"czerw", u"lip", u"sierp", u"wrze", u"pa",
                         u"list", u"grud"]
 
 
@@ -42,7 +43,7 @@ def to_py_date(tokens, seqs):
     for (token, f) in zip(tokens, seqs):
         if f == 'y':
             if len(token) == 2:
-                y = int("20"+token)
+                y = int("20" + token)
             else:
                 y = int(token)
         elif f == 'm':
@@ -56,7 +57,7 @@ def polish_py_date(tokens, format1=""):
     y, m, d = 0, 0, 0
     polish_month = tokens[1]
     if len(tokens[2]) == 2:
-        y = int("20"+tokens[2])
+        y = int("20" + tokens[2])
     else:
         y = int(tokens[2])
 
@@ -66,7 +67,6 @@ def polish_py_date(tokens, format1=""):
             break
     d = int(tokens[0])
     return date(y, m, d)
-
 
 
 def polish1_py_date(tokens, format1=""):
@@ -92,48 +92,12 @@ def handle_date_range(s, format1, date_handler=to_py_date):
     return DateRange(date_handler(split(first), format1), date_handler(split(second), format1))
 
 
-class DateRange(object):
-
-    def __init__(self, start, end):
-        self.start = start
-        self.end = end
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __eq__(self, other):
-        if not other:
-            return False
-        if type(other) != type(self):
-            return False
-        return self.start == self.start and self.end == self.end
-
-    def __repr__(self):
-        s = self.start
-        e = self.end
-        if not e:
-            e = ""
-        else:
-            e = "-" + str(e)
-
-        return "%s%s" % (s, e)
-
-    def __str__(self):
-        s = self.start
-        e = self.end
-        if not e:
-            e = ""
-        else:
-            e = " - " + str(e)
-
-        return "%s%s" % (s, e)
-
-
 class DateInfo:
-
-    def __init__(self, strdate, format):
+    def __init__(self, strdate, format, start_pos, end_pos):
         self.strstart = strdate
         self.format = format
+        self.startPos = start_pos
+        self.endPos = end_pos
         self.dateRange = natural_to_date_mappers[self.format](strdate)
 
     def __str__(self):
@@ -141,7 +105,6 @@ class DateInfo:
 
     def __repr__(self):
         return self.dateRange.__repr__()
-
 
 
 natural_to_date_mappers = {
@@ -159,7 +122,6 @@ for format in formats:
     rexs.append(re.compile(format, re.IGNORECASE | re.UNICODE | re.MULTILINE))
 
 
-
 def extract_dates(string):
     dates = []
     for (rex, format) in zip(rexs, formats):
@@ -172,22 +134,23 @@ def extract_dates(string):
             if match:
                 # print "\t" + match.group()
                 try:
-                    dates.append(DateInfo(match.group(1), format))
-                except Exception as ex:
-                    print "error while processing date %s" % match.group(1)
-                    print ex
+                    dates.append(DateInfo(match.group(1), format, match.start(1), match.end(1)))
+                except:
+                    pass
                 start_pos = match.end() + 1
             else:
                 break
+    dates = [d for d in dates if d.dateRange.start <= date(3000, 1, 1)]
     return dates
 
 
+# for testing
 from utils import download_page
 
 if __name__ == "__main__":
     pp = pprint.PrettyPrinter(indent=4)
     page_text = download_page(
-        "http://starforce.eu/")
+            "http://starforce.eu/")
     date_strs = extract_dates(page_text)
     for date_str in date_strs:
-        print date_str
+        print date_str.startPos, date_str.endPos

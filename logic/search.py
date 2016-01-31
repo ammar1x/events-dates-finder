@@ -2,20 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 import time
 from utils import strip_tags
-from common.utils import read_file
 from common.utils import dump
-
-
-class EngineQueryError(Exception):
-    def __init__(self, msg, status_code=None):
-        self.msg = msg
-        self.status_code = status_code
-
-    def __str__(self):
-        return "EngineQueryError (msg = %s, status code = %s)" % (self.msg, self.status_code)
-
-    def __repr__(self):
-        return "EngineQueryError (msg = %s, status code = %s)" % (self.msg, self.status_code)
+from exceptions import EngineQueryError
 
 
 class QueryResult(object):
@@ -54,9 +42,9 @@ def query(web_page, words, params, start=0):
     r = requests.get(web_page, params=payload, headers=headers)
 
     if r.status_code != 200:
-        print r.request.headers
-        print r.text
+        print "Error while requesting querying search engine for results"
         raise EngineQueryError("Cannot download search results from %s" % web_page, r.status_code)
+
     return r.text
 
 
@@ -98,7 +86,7 @@ def extract_google_query_results(html):
         href = extract_info(lambda: a['href'])
         title = extract_info(lambda: "".join(list(a.strings)))
 
-        if not href or href.startswith("/url"):
+        if not href or not href.startswith("http"):
             try:
                 href = a['data-href']
             except:
@@ -140,6 +128,7 @@ def get_n_results(query_string, n=10, query_engine=query_bing):
     return [it for qres in qresults for it in qres]
 
 
+# for testing
 if __name__ == "__main__":
     l = get_n_results("festiwal gdynia", 10, query_google)
     print "L = "

@@ -4,6 +4,7 @@ import logic
 
 
 class QEventItemWidget(QtGui.QWidget):
+    ''' Display custom list item in list widget '''
     def __init__(self, parent):
         super(QEventItemWidget, self).__init__(parent)
         # layout managers
@@ -22,23 +23,19 @@ class QEventItemWidget(QtGui.QWidget):
         self.setLayout(self.vBoxLayout)
 
         # stylesheet for labels
-        # Todo: change style
-        self.titleLabel.setStyleSheet(''' color: rgb(255,0,0) ''')
-        self.dateLabel.setStyleSheet(''' color: rgb(0,0,255) ''')
-
-        # stylesheet for widget
-        # Todo: change style
-        # self.setStyleSheet('''border:1px solid rgb(0, 255, 0);''')
+        self.titleLabel.setStyleSheet(''' color: rgb(26,13,171) ''')
+        self.dateLabel.setStyleSheet(''' color: rgb(13,171,26) ''')
 
     def set_text(self, text):
         self.titleLabel.setText(text)
 
     def set_date(self, date):
-        # TODO: date formatting
         self.dateLabel.setText(str(date))
 
 
 class Worker(QtCore.QThread):
+    '''Background thread for processing data - downloading pages, and
+    extracting dates from them'''
     def __init__(self, query=None, n=10):
         QtCore.QThread.__init__(self)
         self.events = None

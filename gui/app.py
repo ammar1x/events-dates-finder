@@ -1,6 +1,5 @@
 from PyQt4 import QtGui
 from PyQt4 import QtCore
-import sys
 import searchUI
 from helpers import QEventItemWidget, Worker
 import logic
@@ -16,14 +15,13 @@ class SearchEventApp(QtGui.QMainWindow, searchUI.Ui_MainWindow):
         self.searchButton.clicked.connect(self.search_events)
 
         self.progressBar.setRange(0, 1)
-        self.progressBar.setStyleSheet(read_file("progres_bar_stylesheet.css"))
+        self.progressBar.setStyleSheet(read_file("config/progres_bar_stylesheet.css"))
 
         self.paint_cell_calendar_old = self.calendarWidget.paintCell
         self.calendarWidget.paintCell = self.paint_calendar_cell
-        self.calendarWidget.clicked.connect(self.handle_date_clicked)
 
 
-        # QtCore.QObject.connect(self.searchInput, QtCore.SIGNAL('keyPressed()'), self.search_events)
+
         self.searchInput.returnPressed.connect(self.search_events)
 
         self.worker = Worker()
@@ -52,10 +50,6 @@ class SearchEventApp(QtGui.QMainWindow, searchUI.Ui_MainWindow):
         mbox = QtGui.QMessageBox(QtGui.QMessageBox.Critical, "Application error", msg)
         mbox.exec_()
 
-    def handle_date_clicked(self, date):
-        # TODO: handle date clicked
-        print date
-
     def paint_calendar_cell(self, painter, rect, date):
 
         # TODO: handle drawing date
@@ -79,9 +73,11 @@ class SearchEventApp(QtGui.QMainWindow, searchUI.Ui_MainWindow):
 
 
         text = ""
-        if len(devent) > 1:
+        if 1 < len(devent) < 5:
             # TODO: kilka wydarzen
             text = "%d wydarzenia" % len(devent)
+        elif len(devent) >= 5:
+            text = "%d wydarzen" % len(devent)
         elif len(devent) == 1:
             text = devent[0].title
 
@@ -118,7 +114,7 @@ class SearchEventApp(QtGui.QMainWindow, searchUI.Ui_MainWindow):
                 item = QEventItemWidget(self.listView)
                 item.set_text(event.title)
                 if event.endDate:
-                    item.set_date(event.startDate + " - " + event.endDate)
+                    item.set_date(str(event.startDate) + " -- " + str(event.endDate))
                 else:
                     item.set_date(event.startDate)
 
@@ -141,18 +137,3 @@ class SearchEventApp(QtGui.QMainWindow, searchUI.Ui_MainWindow):
 
         self.progressBar.setRange(0, 0)
 
-
-def main():
-
-    import sys
-    reload(sys)
-    sys.setdefaultencoding('utf-8')
-
-    app = QtGui.QApplication(sys.argv)
-    form = SearchEventApp()
-    form.show()
-    app.exec_()
-
-
-if __name__ == "__main__":
-    main()
